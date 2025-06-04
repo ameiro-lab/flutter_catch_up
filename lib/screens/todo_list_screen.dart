@@ -59,45 +59,69 @@ class _TodoListScreenState extends State<TodoListScreen> {
   @override
   Widget build(BuildContext context) {
 
-    // 状態変更を監視、変化があれば最新のTODOリストを格納し、 build() を再実行する
-    final todos = context.watch<TodoProvider>().todos;  // context.watch<TodoProvider>()はProviderパターンで状態を監視し、変更があればUIを再構築するためのデータ取得方法。
+    final todoProvider = context.read<TodoProvider>();  // context.read<TodoProvider>()はProviderパターンでのデータ取得方法
 
-    return Scaffold(  // Scaffold は Flutter が提供する、マテリアルデザインの画面レイアウトの骨組みウィジェット
-      /// アプリバーの設定
-      appBar: AppBar(title: const Text('TODOアプリ')),
-      /// ボディの設定
-      body: Column(
-        children: [
-          /// 新規TODOテキストフィールド入力部分
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
+    return FutureBuilder( // 非同期処理（Future） を待ってからUIを出し分ける Flutterの標準ウィジェット
+      future: todoProvider.initBoxFuture, // todoProvider#initBoxFuture の完了を待つの意味
+      builder: (context, snapshot) {      // builder は非同期処理の進行状況に応じて、UIを構築する関数。snapshot に非同期処理（Future）の現在の状態・結果などが格納される
+        // 初期化中は、
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          // ローディング表示する
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+
+        // 初期化中にエラーが起きた場合、
+        } else if (snapshot.hasError) {
+          // エラーメッセージを表示
+          return Scaffold(
+            body: Center(child: Text('初期化エラーが発生しました')),
+          );
+
+        // 初期化が成功した場合、
+        } else {
+          // 状態変更を監視、変化があれば最新のTODOリストを格納し、 build() を再実行する
+          final todos = context.watch<TodoProvider>().todos;  // context.watch<TodoProvider>()はProviderパターンで状態を監視し、変更があればUIを再構築するためのデータ取得方法。
+
+          return Scaffold(  // Scaffold は Flutter が提供する、マテリアルデザインの画面レイアウトの骨組みウィジェット
+            /// アプリバーの設定
+            appBar: AppBar(title: const Text('TODOアプリ')),
+            /// ボディの設定
+            body: Column(
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,  // 定義したコントローラーを設定
-                    decoration: const InputDecoration(labelText: '新しいタスク'), // ラベルテキストの設定
+                /// 新規TODOテキストフィールド入力部分
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _controller,  // 定義したコントローラーを設定
+                          decoration: const InputDecoration(labelText: '新しいタスク'), // ラベルテキストの設定
+                        ),
+                      ),
+                      // 追加ボタン
+                      IconButton(
+                        icon: const Icon(Icons.add),  // アイコンを設定
+                        onPressed: _addTodo,          // タップ時に定義した_addTodoメソッドを実行
+                      ),
+                    ],
                   ),
                 ),
-                // 追加ボタン
-                IconButton(
-                  icon: const Icon(Icons.add),  // アイコンを設定
-                  onPressed: _addTodo,          // タップ時に定義した_addTodoメソッドを実行
+                /// TODOリスト表示部分
+                Expanded(
+                  child: ListView.builder(  // ListView.builder は「繰り返し構造（＝for文的処理）」を内部に持ったウィジェット
+                    itemCount: todos.length,          // TODOアイテムの総数を設定（＝itemCount 分だけループ処理を実行する）
+                    itemBuilder: (context, index) {   // 各ループ処理の本体（＝indexごとにアイテムを格納）
+                      return TodoTile(index: index);  // 取得したアイテムで TodoTileウェジット を表示する
+                    },
+                  ),
                 ),
               ],
             ),
-          ),
-          /// TODOリスト表示部分
-          Expanded(
-            child: ListView.builder(  // ListView.builder は「繰り返し構造（＝for文的処理）」を内部に持ったウィジェット
-              itemCount: todos.length,          // TODOアイテムの総数を設定（＝itemCount 分だけループ処理を実行する）
-              itemBuilder: (context, index) {   // 各ループ処理の本体（＝indexごとにアイテムを格納）
-                return TodoTile(index: index);  // 取得したアイテムで TodoTileウェジット を表示する
-              },
-            ),
-          ),
-        ],
-      ),
+          );
+        }
+      }
     );
   }
 }
