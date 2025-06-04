@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_catch_up/models/widgets/todo_tile.dart';
+import 'package:flutter_catch_up/widgets/todo_tile.dart';
 import 'package:flutter_catch_up/providers/todo_provider.dart';
 import 'package:provider/provider.dart';
 
