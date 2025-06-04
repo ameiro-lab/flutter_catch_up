@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_catch_up/providers/todo_provider.dart';
+import 'package:flutter_catch_up/widgets/dialog_confirm.dart';
 import 'package:provider/provider.dart';
 
 /// 個別(1行あたりの)のTODOアイテムのウィジェット定義
@@ -52,12 +53,25 @@ class TodoTile extends StatelessWidget {
       ),
       // 右側に削除ボタンを配置
       trailing: IconButton(
-        // ゴミ箱アイコンを表示
         icon: const Icon(Icons.delete),
-        // ボタンがタップされた時の処理
-        // context.read<TodoProvider>()で一回限りのアクセスを行い、
-        // removeTodoメソッドで指定インデックスのTODOを削除する
-        onPressed: () => context.read<TodoProvider>().removeTodo(index),
+        onPressed: () async { // 押下時のイベントを設定する
+
+          // プロバイダを先に取得 => await のあとに context を使うと、その間にウィジェットが破棄（unmounted）されている可能性があるため
+          final provider = context.read<TodoProvider>();
+
+          // ダイアログを表示する（await 後に context を使わないよう注意）
+          final confirmed = await DialogConfirm.show(
+            context,
+            title: '削除確認',
+            content: 'このタスクを削除しますか？',
+          );
+
+          // ユーザーが true を返す選択（＝はい）をした場合、
+          if (confirmed == true) {
+            // 削除を実行する
+            provider.removeTodo(index);
+          }
+        },
       ),
     );
   }
